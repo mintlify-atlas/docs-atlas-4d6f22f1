@@ -1,0 +1,168 @@
+---
+title: "n8n webhook reference"
+description: "All n8n webhook endpoints used by Fittura, their request payloads, and expected responses."
+---
+
+Fittura uses four n8n webhook endpoints to handle outfit recommendations, wardrobe management, and account deletion.
+
+<Note>
+  All webhook URLs are defined in the `ENV` object in `src/config/env.ts`. Update that file to point to your own n8n instance for production deployments.
+</Note>
+
+<Warning>
+  The URLs below are the defaults for the Fittura demo instance. For production deployments, replace all webhook URLs with your own n8n instance URLs in `src/config/env.ts`.
+</Warning>
+
+---
+
+## N8N_RECOMMENDATION_WEBHOOK
+
+Used for both uploading new wardrobe items (with images) and generating outfit recommendations (without images).
+
+| Property | Value |
+|---|---|
+| Default URL | `https://n8n.cute-wear.com/webhook/wardrobe-trigger` |
+| Method | `POST` |
+| Called by | `RecommendationService.getRecommendation` |
+
+### Request payload
+
+```json
+{
+  "message": {
+    "photo": ["data:image/jpeg;base64,..."],
+    "text": "Date Night",
+    "language": "en",
+    "from": {
+      "id": "user-uuid",
+      "username": "John",
+      "email": "john@example.com",
+      "first_name": "John"
+    },
+    "message_id": "msg_1234567890"
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `message.photo` | Array of base64-encoded JPEG strings prefixed with `data:image/jpeg;base64,`. Empty array for recommendation-only requests. |
+| `message.text` | The occasion string (e.g., `"Date Night"`, `"Work"`). |
+| `message.language` | Locale code for the response (default: `'en'`). |
+| `message.from` | User identity for personalization. Falls back to test values when no user is authenticated. |
+| `message.message_id` | Unique request ID generated from `Date.now()`. |
+
+### Response
+
+One of three formats depending on the operation — see [RecommendationService response formats](/reference/recommendation-service#response-formats).
+
+---
+
+## N8N_GET_ITEMS_WEBHOOK
+
+Fetches all wardrobe items for a given user.
+
+| Property | Value |
+|---|---|
+| Default URL | `https://n8n.cute-wear.com/webhook-test/get-wardrobe` |
+| Method | `POST` |
+| Called by | `WardrobeService.getItems` |
+
+### Request payload
+
+```json
+{
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "name": "John"
+  },
+  "language": "en"
+}
+```
+
+### Response
+
+```json
+[
+  {
+    "user": {
+      "id": "user-uuid",
+      "email": "user@example.com",
+      "name": "John"
+    },
+    "wardrobe": [
+      {
+        "id": 1,
+        "storage_path": "user-uuid/filename.jpg",
+        "category": "Top",
+        "description": "White Oxford shirt",
+        "season": "Summer",
+        "formal_level": "Casual",
+        "created_at": "2024-06-01T10:00:00.000Z"
+      }
+    ]
+  }
+]
+```
+
+`WardrobeService.getItems` maps each wardrobe entry to a `WardrobeItem`, using `storage_path` as `imageUrl` and combining `description`, `season`, and `formal_level` into the `tags` array.
+
+---
+
+## N8N_DELETE_ITEM_WEBHOOK
+
+Deletes a single wardrobe item and its associated file from storage.
+
+| Property | Value |
+|---|---|
+| Default URL | `https://n8n.cute-wear.com/webhook/delete-item` |
+| Method | `POST` |
+| Called by | `WardrobeService.deleteItem` |
+
+### Request payload
+
+```json
+{
+  "item_id": "123",
+  "storage_path": "user-uuid/filename.jpg",
+  "filename": "filename.jpg",
+  "user_id": "user-uuid"
+}
+```
+
+### Response
+
+```json
+[{ "status": "success" }]
+```
+
+`WardrobeService.deleteItem` checks for `status === 'success'` in the first element of the response array. Any other value causes the service to throw an error.
+
+---
+
+## N8N_DELETE_ACCOUNT_WEBHOOK
+
+Deletes all data associated with a user account (images, metadata) before the Supabase Auth record is removed.
+
+| Property | Value |
+|---|---|
+| Default URL | `https://n8n.cute-wear.com/webhook/delete-account` |
+| Method | `POST` |
+| Called by | `AuthService.deleteAccount` |
+
+### Request payload
+
+```json
+{
+  "userId": "user-uuid"
+}
+```
+
+### Response
+
+Any `200 OK` response is treated as success. Errors from this webhook are logged but do not block the subsequent Supabase `delete_user` RPC call — account deletion proceeds regardless of webhook outcome.
+
+---
+
+For environment configuration details, see [Environment config](/reference/environment-config).

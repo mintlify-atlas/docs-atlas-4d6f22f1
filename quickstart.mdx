@@ -1,80 +1,73 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick start"
+description: "Get Fittura installed and add your first wardrobe item in under 5 minutes."
 ---
 
-## Get started in three steps
+<Steps>
+  <Step title="Download the app">
+    Fittura is built with Expo and React Native. You can run it in two ways:
 
-Get your documentation site running locally and make your first customization.
+    - **Expo Go (fastest)** — Install [Expo Go](https://expo.dev/go) on your iOS or Android device, then scan the QR code from a development server. No build step required.
+    - **Native build** — Use EAS Build to compile a standalone `.apk` or `.ipa`. The app is identified by package `com.belalelkady.fittura` and slug `fittura`.
 
-### Step 1: Set up your local environment
+    <Note>
+      Expo Go is recommended for development and testing. Native builds produced with EAS CLI are required for production distribution on the App Store or Google Play.
+    </Note>
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Create an account">
+    Open Fittura and tap **Sign up** on the welcome screen.
 
-### Step 2: Deploy your changes
+    Fill in your full name, email address, and a password. You can also choose your preferred language during registration — Fittura supports 10 languages.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    After submitting, Fittura sends a one-time passcode (OTP) to your email. Enter it on the verification screen to activate your account before you can sign in.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    Already have an account? Tap **Sign in** and enter your email and password. If your email is not yet verified, the app prompts you to re-send the OTP automatically.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    See [Authentication](/account/authentication) for details on password reset and session management.
+  </Step>
 
-### Step 3: Go live
+  <Step title="Add your first clothing item">
+    After signing in, tap the **camera tab** at the bottom of the screen to open the **Add new items** screen.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    You have two options:
+
+    - **Take a photo** — Tap the camera button. Fittura requests camera permission on first use, then lets you frame and capture a single item.
+    - **Select from gallery** — Tap the gallery button to open your photo library. You can select multiple images in a single session.
+
+    Once images are selected, tap **Save items** to upload them to your wardrobe. Each image is sent to the wardrobe service and stored against your account.
+
+    <Tip>
+      Select multiple items from your gallery at once instead of adding them one by one. The gallery picker supports multi-select, so you can upload an entire batch in a single save operation.
+    </Tip>
+
+    See [Camera & image picker](/features/camera) for full details on permissions, editing, and supported formats.
+  </Step>
+
+  <Step title="Get your first outfit recommendation">
+    Go to the **home tab** and tap **Get Style**.
+
+    Choose an occasion — for example, *Work*, *Casual*, *Date Night*, or *Gym* — or type a custom description. The AI analyses your wardrobe and returns up to five coordinated items along with style tips.
+
+    Tap the heart icon on any recommendation to save it to your **Saved Outfits** tab for quick access later.
+
+    See [AI recommendations](/features/ai-recommendations) for information on how occasion matching and item selection work.
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Camera & image picker" icon="camera" href="/features/camera">
+    Learn about permissions, multi-select, and how images are processed
+  </Card>
+  <Card title="AI recommendations" icon="wand-magic-sparkles" href="/features/ai-recommendations">
+    Understand how the AI stylist selects and ranks outfits
+  </Card>
+  <Card title="Authentication" icon="lock" href="/account/authentication">
+    Password reset, OTP verification, and session handling
+  </Card>
+  <Card title="Installation" icon="terminal" href="/installation">
+    Set up a local development environment and run your own instance
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

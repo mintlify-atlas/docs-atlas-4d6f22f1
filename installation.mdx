@@ -1,0 +1,147 @@
+---
+title: "Installation"
+description: "Set up Fittura for local development and build your own instance."
+---
+
+## Prerequisites
+
+Before you start, make sure you have the following installed:
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Node.js | 18+ | Required by Expo and all tooling |
+| npm or yarn | any recent | Used to install dependencies |
+| Expo CLI | latest | `npm install -g expo-cli` |
+| EAS CLI | 3.0.0+ | Required for native builds — `npm install -g eas-cli` |
+
+You will also need accounts with [Supabase](https://supabase.com) and [n8n](https://n8n.io) to run the backend services. See [Supabase setup](/reference/supabase-setup) and [Environment config](/reference/environment-config) for details.
+
+## Local setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/BelalElkady/outfit-assistant-app.git
+    cd outfit-assistant-app
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    <CodeGroup>
+
+    ```bash npm
+    npm install
+    ```
+
+    ```bash yarn
+    yarn install
+    ```
+
+    ```bash pnpm
+    pnpm install
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environment variables">
+    All service endpoints are defined in `src/config/env.ts`. Open the file and replace each value with your own instances:
+
+    ```typescript src/config/env.ts
+    export const ENV = {
+        // n8n webhook URLs
+        N8N_RECOMMENDATION_WEBHOOK: 'https://your-n8n-instance.com/webhook/wardrobe-trigger',
+        N8N_GET_ITEMS_WEBHOOK: 'https://your-n8n-instance.com/webhook/get-wardrobe',
+        N8N_DELETE_ITEM_WEBHOOK: 'https://your-n8n-instance.com/webhook/delete-item',
+        N8N_DELETE_ACCOUNT_WEBHOOK: 'https://your-n8n-instance.com/webhook/delete-account',
+
+        // Supabase
+        SUPABASE_URL: 'https://your-project-ref.supabase.co',
+        SUPABASE_ANON_KEY: 'your-supabase-anon-key',
+    };
+    ```
+
+    | Key | Purpose |
+    |-----|---------|
+    | `N8N_RECOMMENDATION_WEBHOOK` | Triggers the AI outfit recommendation workflow |
+    | `N8N_GET_ITEMS_WEBHOOK` | Fetches wardrobe items for the current user |
+    | `N8N_DELETE_ITEM_WEBHOOK` | Deletes a single item from the wardrobe |
+    | `N8N_DELETE_ACCOUNT_WEBHOOK` | Removes all data for a user account |
+    | `SUPABASE_URL` | Your Supabase project URL |
+    | `SUPABASE_ANON_KEY` | Supabase anonymous (public) API key |
+
+    <Warning>
+      The default `env.ts` file contains real URLs and credentials for the reference deployment. Replace all values with your own n8n and Supabase instances before building for production or sharing the repository publicly.
+    </Warning>
+  </Step>
+
+  <Step title="Start the development server">
+    ```bash
+    npx expo start
+    ```
+
+    A QR code appears in your terminal. Scan it with the **Expo Go** app on your iOS or Android device to load the app instantly.
+
+    <Note>
+      Expo Go must be installed on your device. Download it from the [App Store](https://apps.apple.com/app/expo-go/id982107779) or [Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent).
+    </Note>
+  </Step>
+</Steps>
+
+## Running on specific platforms
+
+Use the following commands to target a specific platform directly:
+
+```bash
+# iOS simulator (requires Xcode on macOS)
+npx expo start --ios
+
+# Android emulator (requires Android Studio)
+npx expo start --android
+
+# Web browser
+npx expo start --web
+```
+
+These are also available as npm scripts:
+
+```bash
+npm run ios
+npm run android
+npm run web
+```
+
+## Native builds with EAS
+
+Fittura uses EAS Build for native binary production. The `eas.json` in the project root defines four build profiles:
+
+| Profile | Description |
+|---------|-------------|
+| `development` | Internal distribution build with dev client enabled |
+| `preview` | Internal distribution build for testing |
+| `production` | Store-ready build with auto-incrementing version |
+| `beta` | APK for Android, simulator build for iOS |
+
+To trigger a build:
+
+```bash
+# Install EAS CLI if you haven't already
+npm install -g eas-cli
+
+# Log in to your Expo account
+eas login
+
+# Build for a specific profile
+eas build --profile preview --platform android
+```
+
+## Further reading
+
+<CardGroup cols={2}>
+  <Card title="Environment config" icon="gear" href="/reference/environment-config">
+    Full reference for all ENV keys and how they are used at runtime
+  </Card>
+  <Card title="Supabase setup" icon="database" href="/reference/supabase-setup">
+    Create the required tables, storage buckets, and auth settings
+  </Card>
+</CardGroup>

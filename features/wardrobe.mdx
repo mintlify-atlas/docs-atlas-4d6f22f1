@@ -1,0 +1,30 @@
+---
+title: "Wardrobe"
+description: "Browse and manage your digital wardrobe — all your clothing items organized by category."
+---
+
+The Wardrobe tab is the home screen of Fittura. It displays every clothing item you have added, grouped by category: Top, Bottom, Shoes, Outerwear, Bag, Hat, Watch, Accessory, and Uncategorized. The total number of items is shown in the subtitle beneath the screen title.
+
+## Browsing your wardrobe
+
+Items are organized into collapsible sections, one per category. Tap a category header to expand or collapse that section. Each item card shows the item's photo, its category name, and a comma-separated list of descriptive tags (description, season, and formality level).
+
+## Viewing items
+
+Tap any item image to open a fullscreen viewer. Swipe between items within the same category. A footer overlay at the bottom of the viewer displays the item's category and all associated tags.
+
+## Deleting items
+
+Tap the trash icon on an item card to delete it. A confirmation dialog appears before anything is removed. Confirming the dialog deletes the item from both the local store and cloud storage via the configured n8n webhook.
+
+<Note>
+Deletion is permanent. Once confirmed, the item cannot be recovered from within the app.
+</Note>
+
+## Pull to refresh
+
+Pull down on the wardrobe list to fetch the latest items from the server. This forces a full refresh, bypassing the in-memory cache.
+
+<Tip>
+Tap the **Get Style** button in the top-right corner to open the AI stylist directly from the Wardrobe tab. The button is disabled if your wardrobe is empty — add items first using the [Camera tab](/features/camera).
+</Tip>

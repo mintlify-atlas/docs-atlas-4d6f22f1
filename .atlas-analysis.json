@@ -1,0 +1,102 @@
+{
+  "projectType": "saas",
+  "projectName": "Fittura",
+  "projectDescription": "An AI-powered mobile outfit assistant that manages your wardrobe, suggests personalized outfit recommendations based on occasion and weather, and lets you save favorite looks.",
+  "theme": "almond",
+  "primaryColor": "#7c7c7c",
+  "lightColor": "#0a0a0a",
+  "darkColor": "#d7d7d7",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/wardrobe",
+              "features/ai-recommendations",
+              "features/favorites",
+              "features/camera"
+            ]
+          },
+          {
+            "group": "User Account",
+            "pages": [
+              "account/authentication",
+              "account/profile",
+              "account/language-settings"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Technical Reference",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "reference/architecture",
+              "reference/tech-stack",
+              "reference/project-structure"
+            ]
+          },
+          {
+            "group": "Services & APIs",
+            "pages": [
+              "reference/auth-service",
+              "reference/wardrobe-service",
+              "reference/recommendation-service",
+              "reference/n8n-webhooks"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "reference/supabase-setup",
+              "reference/environment-config",
+              "reference/build-and-deploy"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI-powered outfit recommendations via n8n automation workflows",
+    "Virtual wardrobe management with photo capture and image picker",
+    "Occasion-based styling (Date Night, Work, Gym, Casual, and custom occasions)",
+    "Save and browse favorite outfit combinations",
+    "Supabase authentication with email/password, OTP verification, and password reset",
+    "Multi-language support across 10 languages including Arabic RTL",
+    "Dark mode toggle and per-user theme preferences",
+    "Category-grouped wardrobe view with collapsible sections"
+  ],
+  "publicApiSurface": [
+    "AuthService.login(email, password)",
+    "AuthService.register(email, password, name)",
+    "AuthService.logout()",
+    "AuthService.getCurrentUser()",
+    "AuthService.updateProfile(updates)",
+    "AuthService.updateEmail(email)",
+    "AuthService.updatePassword(password)",
+    "AuthService.verifyOtp(email, token, type)",
+    "AuthService.resetPasswordForEmail(email)",
+    "AuthService.deleteAccount(userId)",
+    "WardrobeService.getItems(user, language)",
+    "WardrobeService.addItem(imageUrl)",
+    "WardrobeService.deleteItem(item, user)",
+    "WardrobeService.getStats()",
+    "RecommendationService.getRecommendation(lat, long, occasion, user, imagesBase64, language)",
+    "useWardrobeStore (Zustand store: items, fetchItems, addItem, deleteItem)",
+    "useFavoritesStore (Zustand store: favorites, addFavorite, removeFavorite, isFavorite)"
+  ]
+}

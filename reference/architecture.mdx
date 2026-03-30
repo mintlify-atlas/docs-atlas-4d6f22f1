@@ -1,0 +1,76 @@
+---
+title: "Architecture overview"
+description: "How Fittura's components connect — from the mobile client to Supabase and n8n automation."
+---
+
+Fittura is a React Native mobile app with three main external dependencies: Supabase (auth + storage), n8n (AI/automation workflows), and the device's camera/gallery. The app itself contains no AI logic — all intelligence is delegated to n8n workflows that process images and generate outfit recommendations.
+
+## System components
+
+**Mobile client**
+
+An Expo/React Native app using file-based routing via expo-router. Zustand manages local state for the wardrobe and saved outfits. NativeWind provides Tailwind CSS-style utility classes for styling.
+
+**Supabase**
+
+Handles two responsibilities:
+
+- **Authentication** — email/password sign-up with OTP email verification, password reset, and session management via the Supabase JS client.
+- **File storage** — clothing images are stored in the `valid-images` bucket, organized into per-user folders by user ID (e.g., `{userId}/filename.jpg`). A `.init` placeholder is uploaded on first sign-in to ensure the folder exists.
+
+**n8n automation**
+
+Four webhook endpoints handle all backend operations:
+
+| Endpoint | Constant | Purpose |
+|---|---|---|
+| `N8N_RECOMMENDATION_WEBHOOK` | `wardrobe-trigger` | Upload images for AI classification; get outfit recommendations |
+| `N8N_GET_ITEMS_WEBHOOK` | `get-wardrobe` | Fetch all wardrobe items for the authenticated user |
+| `N8N_DELETE_ITEM_WEBHOOK` | `delete-item` | Delete a single item from storage and the database |
+| `N8N_DELETE_ACCOUNT_WEBHOOK` | `delete-account` | Remove all user data before account deletion |
+
+The AI classification step identifies `category`, `description`, `season`, `formal_level`, and `confidence` for each uploaded image.
+
+## Data flow: adding an item
+
+<Steps>
+  <Step title="User selects or photographs an image">
+    The app uses expo-image-picker or expo-camera to capture a photo. The image is base64-encoded in the app.
+  </Step>
+  <Step title="App sends the image to n8n">
+    The base64 image(s) are POSTed to `N8N_RECOMMENDATION_WEBHOOK` as `data:image/jpeg;base64,...` strings inside the `message.photo` array.
+  </Step>
+  <Step title="n8n classifies the image">
+    The n8n workflow runs AI processing to identify the item's `category`, `description`, `season`, `formal_level`, and `confidence`.
+  </Step>
+  <Step title="n8n stores the result">
+    n8n uploads the image file to the `valid-images` Supabase bucket and saves the metadata (category, description, etc.) to the database, keyed by user ID.
+  </Step>
+  <Step title="App refreshes the wardrobe">
+    After upload completes, the app calls `N8N_GET_ITEMS_WEBHOOK` to fetch the updated wardrobe. The Zustand store is updated with the new items.
+  </Step>
+</Steps>
+
+## Data flow: outfit recommendation
+
+<Steps>
+  <Step title="User selects an occasion">
+    The user describes an occasion (e.g., "casual brunch", "job interview") in the recommendation modal.
+  </Step>
+  <Step title="App calls the recommendation webhook">
+    The app POSTs to `N8N_RECOMMENDATION_WEBHOOK` with the user's info, occasion text, and current location coordinates.
+  </Step>
+  <Step title="n8n fetches the user's wardrobe">
+    The n8n workflow retrieves all clothing items stored for that user from Supabase.
+  </Step>
+  <Step title="AI selects matching items">
+    The AI selects items from the wardrobe and returns an `outfit` object with slots for `top`, `bottom`, `shoes`, `outerwear`, `bag`, `hat`, `watch`, and `accessories`.
+  </Step>
+  <Step title="App renders the recommendation">
+    The app displays the selected items along with the AI's `reasoning`, style tips, and any weather notes for the occasion.
+  </Step>
+</Steps>
+
+<Note>
+  All AI processing is handled entirely by n8n. To modify the classification logic, recommendation algorithm, or outfit-selection rules, update the n8n workflows — not the app code.
+</Note>

@@ -1,0 +1,134 @@
+---
+title: 'Supabase setup'
+description: 'Configure Supabase authentication and storage for your Fittura instance.'
+---
+
+Fittura uses Supabase for two core functions: user authentication (sign-up, sign-in, session management) and image storage (wardrobe photos). You need a Supabase project with auth enabled and a storage bucket named `valid-images` before the app will work correctly.
+
+## Creating a Supabase project
+
+<Steps>
+  <Step title="Create a new project">
+    Go to [supabase.com](https://supabase.com) and sign in. Click **New project**, choose an organization, and fill in the project name, database password, and region.
+  </Step>
+  <Step title="Copy your credentials">
+    Once the project is provisioned, open **Project Settings → API**. Copy the **Project URL** and the **anon / public** key — you'll need both in the next step.
+  </Step>
+  <Step title="Update env.ts">
+    Open `src/config/env.ts` and replace the placeholder values:
+
+    ```typescript src/config/env.ts
+    SUPABASE_URL: 'https://your-project-ref.supabase.co',
+    SUPABASE_ANON_KEY: 'your-anon-key',
+    ```
+  </Step>
+</Steps>
+
+## Storage bucket setup
+
+Create a storage bucket named `valid-images` in the Supabase dashboard:
+
+1. Go to **Storage → New bucket**.
+2. Set the name to `valid-images`.
+3. Enable **public** access on the bucket. Images are served via their storage paths — access is controlled at the row level by the RLS policies below, not at the bucket level.
+
+User images are organized by user ID inside the bucket:
+
+```
+valid-images/
+└── {userId}/
+    ├── .init          ← placeholder created on account setup
+    ├── item-abc.jpg
+    └── item-xyz.jpg
+```
+
+A `.init` placeholder file is written to each user's folder when their account is first set up. This simulates folder existence, since Supabase Storage does not have true directories.
+
+## Row Level Security (RLS) policies
+
+Fittura enforces per-user isolation through RLS policies on `storage.objects`. Each policy checks that the first path segment of the object name matches the authenticated user's ID (`auth.uid()`), so users can only read, write, update, or delete their own files.
+
+Run the following SQL in the **Supabase SQL Editor** (or via the CLI) to apply all four policies:
+
+```sql supabase_policies.sql
+-- 1. Ensure the bucket exists and is public
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('valid-images', 'valid-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Enable RLS (Commented out as it often causes permission errors and is usually enabled by default)
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- 3. Policy: Allow users to UPLOAD files to their own folder
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'valid-images' AND
+  (storage.foldername(name))[1] = (SELECT auth.uid())::text
+);
+
+-- 4. Policy: Allow users to SELECT (view) their own files
+CREATE POLICY "Allow authenticated reads"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'valid-images' AND
+  (storage.foldername(name))[1] = (SELECT auth.uid())::text
+);
+
+-- 5. Policy: Allow users to UPDATE their own files
+CREATE POLICY "Allow authenticated updates"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'valid-images' AND
+  (storage.foldername(name))[1] = (SELECT auth.uid())::text
+)
+WITH CHECK (
+  bucket_id = 'valid-images' AND
+  (storage.foldername(name))[1] = (SELECT auth.uid())::text
+);
+
+-- 6. Policy: Allow users to DELETE their own files
+CREATE POLICY "Allow authenticated deletes"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'valid-images' AND
+  (storage.foldername(name))[1] = (SELECT auth.uid())::text
+);
+```
+
+The four policies cover the full CRUD surface: `INSERT` (upload), `SELECT` (read), `UPDATE`, and `DELETE`. Any operation against another user's folder will be rejected by Supabase.
+
+## Custom SQL functions
+
+Fittura calls a `delete_user()` RPC function when a user deletes their account from the app. This function runs with `SECURITY DEFINER` privileges so it can delete the calling user's row from `auth.users` — a table that is otherwise not directly accessible to application code.
+
+Run the following in the **Supabase SQL Editor**:
+
+```sql delete_user_function.sql
+-- Run this in your Supabase SQL Editor
+
+-- 1. Create a function that allows users to delete themselves
+create or replace function delete_user()
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  delete from auth.users
+  where id = auth.uid();
+end;
+$$;
+
+-- 2. Grant execute permission to authenticated users
+grant execute on function delete_user to authenticated;
+```
+
+After executing this, the function is available as an RPC call: `supabase.rpc('delete_user')`.
+
+<Note>
+  The `SUPABASE_URL` and `SUPABASE_ANON_KEY` values already in `src/config/env.ts` point to the demo Fittura instance. Replace them with your own project credentials — the demo keys will not work for a custom deployment.
+</Note>

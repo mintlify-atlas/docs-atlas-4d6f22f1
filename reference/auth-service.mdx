@@ -1,0 +1,273 @@
+---
+title: "AuthService"
+description: "Complete reference for the AuthService module — all authentication operations in Fittura."
+---
+
+`AuthService` is the single module handling all authentication against Supabase Auth. Import it from `src/services/auth.service.ts`.
+
+## Types
+
+```typescript
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  birthday?: string;
+}
+```
+
+## Methods
+
+### login
+
+```typescript
+login(email: string, password: string): Promise<User>
+```
+
+Signs in an existing user with email and password via Supabase Auth. On success, initializes the user's Supabase Storage folder in the background.
+
+<ParamField body="email" type="string" required>
+  The user's email address.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's password.
+</ParamField>
+
+Returns a `Promise<User>` containing the authenticated user's `id`, `email`, and `name`.
+
+```typescript
+import { AuthService } from 'src/services/auth.service';
+
+const user = await AuthService.login('jane@example.com', 'hunter2');
+console.log(user.id); // "a1b2c3d4-..."
+```
+
+---
+
+### register
+
+```typescript
+register(email: string, password: string, name: string): Promise<{ user: User; session: any }>
+```
+
+Creates a new account via Supabase Auth. The account requires email confirmation before the user can sign in.
+
+<ParamField body="email" type="string" required>
+  The email address for the new account.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The password for the new account.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  The display name stored in `user_metadata.name`.
+</ParamField>
+
+Returns a `Promise<{ user: User; session: any }>`. `session` will be `null` until the user confirms their email.
+
+```typescript
+const { user, session } = await AuthService.register(
+  'jane@example.com',
+  'hunter2',
+  'Jane Doe'
+);
+```
+
+---
+
+### logout
+
+```typescript
+logout(): Promise<void>
+```
+
+Signs the current user out of Supabase Auth and clears the local session.
+
+```typescript
+await AuthService.logout();
+```
+
+---
+
+### getCurrentUser
+
+```typescript
+getCurrentUser(): Promise<User | null>
+```
+
+Returns the currently authenticated user from the active Supabase session, or `null` if there is no session. Also initializes the user's storage folder idempotently on each call.
+
+```typescript
+const user = await AuthService.getCurrentUser();
+if (user) {
+  console.log(`Logged in as ${user.name}`);
+}
+```
+
+---
+
+### updateProfile
+
+```typescript
+updateProfile(updates: { name?: string }): Promise<any>
+```
+
+Updates the authenticated user's `user_metadata` in Supabase Auth.
+
+<ParamField body="updates" type="object" required>
+  An object containing the fields to update.
+</ParamField>
+
+<ParamField body="updates.name" type="string">
+  New display name to store in `user_metadata.name`.
+</ParamField>
+
+Returns the updated Supabase user object.
+
+```typescript
+await AuthService.updateProfile({ name: 'Jane Smith' });
+```
+
+---
+
+### updateEmail
+
+```typescript
+updateEmail(email: string): Promise<any>
+```
+
+Updates the authenticated user's email address. Supabase sends a confirmation email to the new address.
+
+<ParamField body="email" type="string" required>
+  The new email address.
+</ParamField>
+
+Returns the updated Supabase user object.
+
+```typescript
+await AuthService.updateEmail('new@example.com');
+```
+
+---
+
+### updatePassword
+
+```typescript
+updatePassword(password: string): Promise<any>
+```
+
+Updates the authenticated user's password.
+
+<ParamField body="password" type="string" required>
+  The new password.
+</ParamField>
+
+Returns the updated Supabase user object.
+
+```typescript
+await AuthService.updatePassword('newSecurePassword123');
+```
+
+---
+
+### verifyOtp
+
+```typescript
+verifyOtp(
+  email: string,
+  token: string,
+  type?: 'signup' | 'recovery' | 'magiclink'
+): Promise<{ user: User | null; session: any }>
+```
+
+Verifies a one-time passcode (OTP) for email confirmation, password recovery, or magic link flows.
+
+<ParamField body="email" type="string" required>
+  The email address the OTP was sent to.
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  The six-digit OTP code.
+</ParamField>
+
+<ParamField body="type" type="string" default="signup">
+  The OTP flow type. One of `'signup'`, `'recovery'`, or `'magiclink'`.
+</ParamField>
+
+Returns `{ user: User | null, session: any }`. On successful `signup` verification, the user's storage folder is initialized.
+
+```typescript
+const { user, session } = await AuthService.verifyOtp(
+  'jane@example.com',
+  '123456',
+  'signup'
+);
+```
+
+---
+
+### resetPasswordForEmail
+
+```typescript
+resetPasswordForEmail(email: string): Promise<void>
+```
+
+Sends a password-reset email via Supabase Auth. The user should follow the link in the email and then call `verifyOtp` with `type: 'recovery'`.
+
+<ParamField body="email" type="string" required>
+  The email address associated with the account.
+</ParamField>
+
+```typescript
+await AuthService.resetPasswordForEmail('jane@example.com');
+```
+
+---
+
+### resendOtp
+
+```typescript
+resendOtp(email: string): Promise<void>
+```
+
+Resends the signup confirmation OTP to the given email address.
+
+<ParamField body="email" type="string" required>
+  The email address to resend the OTP to.
+</ParamField>
+
+```typescript
+await AuthService.resendOtp('jane@example.com');
+```
+
+---
+
+### deleteAccount
+
+```typescript
+deleteAccount(userId: string): Promise<void>
+```
+
+Permanently deletes the user's account in two steps:
+
+<Steps>
+  <Step title="Trigger n8n webhook">
+    Sends a `POST` request to `N8N_DELETE_ACCOUNT_WEBHOOK` with `{ userId }` to delete all user data (images, metadata) from external storage. Webhook errors are logged but do not block account deletion.
+  </Step>
+  <Step title="Delete Supabase user">
+    Calls the `delete_user` Supabase RPC function to remove the record from `auth.users`.
+  </Step>
+  <Step title="Sign out">
+    Calls `AuthService.logout()` to clear the local session.
+  </Step>
+</Steps>
+
+<ParamField body="userId" type="string" required>
+  The UUID of the user to delete.
+</ParamField>
+
+```typescript
+await AuthService.deleteAccount(currentUser.id);
+```

@@ -1,0 +1,54 @@
+---
+title: "Adding clothing items"
+description: "Photograph or import clothing items to build your digital wardrobe."
+---
+
+Use the Camera tab to add new items to your wardrobe. You can take a fresh photo with your device camera or import multiple images from your gallery at once.
+
+## Taking a photo
+
+Tap **Take Photo** to launch the camera. The app requests camera permission the first time you do this. Once granted, frame and crop the item, then confirm to add it to your upload queue.
+
+### Permission handling
+
+Camera permission is requested at runtime before the camera opens. If you deny the request, an alert appears guiding you to grant permission in your device settings. The camera button will not function until permission is granted.
+
+## Importing from gallery
+
+Tap **Select Multiple** to open your photo library with multi-select enabled. Choose as many images as you need in one pass. All selected images appear in a preview grid on the Camera screen.
+
+- Tap the red **X** on any thumbnail to remove it from the queue before saving.
+- Tap **+** (the dashed tile at the end of the grid) to open the library picker again and add more images.
+
+## Saving items
+
+<Steps>
+  <Step title="Review the preview grid">
+    Check each thumbnail in the grid. Remove any images you do not want to upload by tapping their red X.
+  </Step>
+  <Step title="Tap Save">
+    Tap the **Save X items** button, where X is the number of images currently in the queue. The button shows a loading indicator while the upload is in progress.
+  </Step>
+  <Step title="AI classification">
+    The app sends all images to the n8n recommendation webhook as base64-encoded data. The AI classifies each item with a category, description, season, and formality level.
+  </Step>
+  <Step title="Items appear in your wardrobe">
+    After a successful upload, you are redirected to the Wardrobe tab where the new items are visible.
+  </Step>
+</Steps>
+
+## What happens on upload
+
+Images are encoded to base64 and posted to the n8n recommendation webhook. The AI pipeline classifies each image and writes the result — including category, description, season, and formality — to Supabase storage under your user folder. The wardrobe store is then updated to reflect the new items.
+
+## Clearing the queue
+
+Tap **Clear All** to discard all images in the current upload queue without saving anything.
+
+<Warning>
+AI classification requires a configured n8n webhook. If the webhook URL is not set, uploads will fail silently. See [/reference/n8n-webhooks](/reference/n8n-webhooks) for setup instructions.
+</Warning>
+
+<Tip>
+Photograph items against a plain, light-coloured background. This gives the AI a clean subject to analyze and produces more accurate category and description results.
+</Tip>

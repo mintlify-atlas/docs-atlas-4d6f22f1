@@ -1,0 +1,47 @@
+---
+title: 'Environment configuration'
+description: 'All configurable values in Fittura and how to set them for your own deployment.'
+---
+
+All external service URLs and credentials are defined in a single file: `src/config/env.ts`. To point Fittura at your own n8n instance and Supabase project, edit the values in that file — no other configuration changes are needed.
+
+## env.ts
+
+```typescript src/config/env.ts
+export const ENV = {
+    // Recommendation Webhook from n8n
+    N8N_RECOMMENDATION_WEBHOOK: 'https://n8n.cute-wear.com/webhook/wardrobe-trigger',
+    N8N_GET_ITEMS_WEBHOOK: 'https://n8n.cute-wear.com/webhook-test/get-wardrobe',
+    N8N_DELETE_ITEM_WEBHOOK: 'https://n8n.cute-wear.com/webhook/delete-item',
+    N8N_DELETE_ACCOUNT_WEBHOOK: 'https://n8n.cute-wear.com/webhook/delete-account', // Placeholder
+
+
+    // Supabase
+    SUPABASE_URL: 'https://tucrdnshuwplnrlviumh.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_tIybYI1e1ozRhhw7J1yE-Q_fc3jLfyd',
+};
+```
+
+## Configuration reference
+
+| Variable | Description | Example |
+|---|---|---|
+| `N8N_RECOMMENDATION_WEBHOOK` | n8n webhook for AI outfit recommendations and item upload | `https://your-n8n.com/webhook/wardrobe-trigger` |
+| `N8N_GET_ITEMS_WEBHOOK` | n8n webhook to fetch all wardrobe items for a user | `https://your-n8n.com/webhook/get-wardrobe` |
+| `N8N_DELETE_ITEM_WEBHOOK` | n8n webhook to delete a single wardrobe item | `https://your-n8n.com/webhook/delete-item` |
+| `N8N_DELETE_ACCOUNT_WEBHOOK` | n8n webhook to delete all user data on account deletion | `https://your-n8n.com/webhook/delete-account` |
+| `SUPABASE_URL` | Your Supabase project URL | `https://yourproject.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase anonymous/publishable key | `sb_publishable_...` |
+
+<Warning>
+  Never commit real credentials to version control. Consider loading sensitive values from environment variables at build time using `expo-constants` and a `.env` file, rather than hardcoding them directly in `env.ts`.
+</Warning>
+
+<Note>
+  The default values in `env.ts` are for the demo Fittura instance. They will stop working for any custom deployment — replace all values before building your own version of the app.
+</Note>
+
+## Related pages
+
+- [Supabase setup](/reference/supabase-setup) — create the Supabase project, storage bucket, and RLS policies
+- [n8n webhooks](/reference/n8n-webhooks) — configure the n8n automation workflows that power recommendations and wardrobe management

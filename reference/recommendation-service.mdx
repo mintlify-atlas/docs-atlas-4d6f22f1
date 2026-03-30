@@ -1,0 +1,161 @@
+---
+title: "RecommendationService"
+description: "Reference for the RecommendationService — AI-powered outfit generation."
+---
+
+`RecommendationService` sends requests to the n8n recommendation webhook and parses outfit responses. Import it from `src/services/recommendation.service.ts`.
+
+<Warning>
+  `N8N_RECOMMENDATION_WEBHOOK` must be configured in `src/config/env.ts` before recommendations will work. The service throws an error immediately if the URL is not set or still contains the placeholder string `'YOUR_N8N'`.
+</Warning>
+
+## Types
+
+```typescript
+interface Outfit {
+  id: string;
+  name: string;
+  reason: string;
+  styleTips?: string[];
+  weatherNotes?: string;
+  items: {
+    id: string;
+    imageUrl: string;
+    category: string;
+    description: string;
+    tags: string[];
+    createdAt: Date;
+  }[];
+}
+```
+
+## Methods
+
+### getRecommendation
+
+```typescript
+getRecommendation(
+  lat: number,
+  long: number,
+  occasion: string,
+  user?: { id: string; email: string; name: string } | null,
+  imagesBase64?: string[],
+  language?: string
+): Promise<Outfit>
+```
+
+Sends a request to `N8N_RECOMMENDATION_WEBHOOK` and returns a parsed `Outfit` object. The method handles three distinct response shapes from n8n (see [Response formats](#response-formats) below).
+
+#### Parameters
+
+<ParamField body="lat" type="number" required>
+  Latitude coordinate for the user's location. Currently passed as `0` — reserved for future weather-aware outfit suggestions.
+</ParamField>
+
+<ParamField body="long" type="number" required>
+  Longitude coordinate for the user's location. Currently passed as `0` — reserved for future weather-aware outfit suggestions.
+</ParamField>
+
+<ParamField body="occasion" type="string" required>
+  Plain text describing where the user is going. This becomes the `message.text` field in the webhook payload. Examples: `"Date Night"`, `"Work"`, `"Gym"`.
+</ParamField>
+
+<ParamField body="user" type="object">
+  The authenticated user object for personalizing the recommendation. Falls back to anonymous test values (`test_user_123`) when `null` or `undefined`.
+</ParamField>
+
+<ParamField body="imagesBase64" type="string[]">
+  Array of base64-encoded JPEG strings for uploading new wardrobe items. Each string is prefixed with `data:image/jpeg;base64,` before being sent. Pass an empty array or omit this parameter when requesting an outfit recommendation without uploading new items.
+</ParamField>
+
+<ParamField body="language" type="string" default="en">
+  Locale code for the translated response (e.g., `'en'`, `'ar'`).
+</ParamField>
+
+#### Example
+
+```typescript
+import { RecommendationService } from 'src/services/recommendation.service';
+
+// Get an outfit recommendation
+const outfit = await RecommendationService.getRecommendation(
+  0,
+  0,
+  'Date Night',
+  user,
+  [],
+  'en'
+);
+
+// Upload a new item and classify it
+const result = await RecommendationService.getRecommendation(
+  0,
+  0,
+  'New item',
+  user,
+  [base64ImageString],
+  'en'
+);
+```
+
+## Response formats
+
+The n8n webhook returns one of three response shapes depending on the operation. `getRecommendation` detects and normalizes all three into an `Outfit` object.
+
+### 1. Outfit recommendation
+
+Returned when n8n generates a multi-item outfit from the user's existing wardrobe.
+
+```json
+{
+  "outfit": {
+    "greeting": "Here's a great look for Date Night!",
+    "reasoning": "This combination balances smart-casual style with comfort.",
+    "outfit": {
+      "top": { "id": 12, "storage_path": "uuid/top.jpg", "description": "White Oxford shirt" },
+      "bottom": { "id": 34, "storage_path": "uuid/bottom.jpg", "description": "Navy chinos" },
+      "outerwear": null,
+      "shoes": { "id": 56, "storage_path": "uuid/shoes.jpg", "description": "White sneakers" },
+      "bag": null,
+      "hat": null,
+      "watch": null,
+      "accessories": []
+    }
+  }
+}
+```
+
+The service maps each non-null slot (`top`, `bottom`, `outerwear`, `shoes`, `bag`, `hat`, `watch`, `accessories`) into `Outfit.items`, capped at five items total.
+
+### 2. Single item classification
+
+Returned when one or more images are uploaded for the first time and n8n classifies a single item.
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 78,
+    "category": "Top",
+    "description": "Floral summer blouse",
+    "season": "Summer",
+    "formal_level": "Casual",
+    "storage_path": "uuid/blouse.jpg"
+  }
+}
+```
+
+The service wraps this in an `Outfit` with `name: 'New Item Analysis'` and a single entry in `items`.
+
+### 3. Upload success
+
+Returned when an image is uploaded but no classification data is available yet.
+
+```json
+{
+  "status": "success",
+  "message": "Image uploaded successfully."
+}
+```
+
+The service returns an `Outfit` with `name: 'Upload Successful'`, the message as `reason`, and an empty `items` array.

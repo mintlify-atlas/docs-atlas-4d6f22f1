@@ -1,0 +1,124 @@
+---
+title: 'Build and deploy'
+description: 'Build Fittura for iOS and Android using EAS Build, and submit to app stores.'
+---
+
+Fittura uses [Expo Application Services (EAS)](https://expo.dev/eas) for building native iOS and Android binaries. EAS handles code signing, native compilation, and distribution — you don't need Xcode or Android Studio installed locally. The EAS configuration is in `eas.json` at the project root.
+
+## Build profiles
+
+`eas.json` defines four build profiles:
+
+| Profile | Description |
+|---|---|
+| `development` | Development client build distributed internally. Use with `expo-dev-client` for a native debugging environment. |
+| `preview` | Internal distribution build without development tooling. Useful for sharing test builds with stakeholders. |
+| `production` | Store-ready build with `autoIncrement: true` to automatically bump the build number on each run. |
+| `beta` | Android produces an `.apk` file (instead of `.aab`) for easy sideloading; iOS targets the simulator. |
+
+## Prerequisites
+
+Before running a build, make sure you have the following:
+
+- **EAS CLI** installed globally:
+  ```bash
+  npm install -g eas-cli
+  ```
+- An **Expo account** at [expo.dev](https://expo.dev).
+- Your own **bundle identifiers** configured in `app.json` if you are deploying under a different account:
+  - Android package: `com.belalelkady.fittura`
+  - iOS bundle identifier: set the `ios.bundleIdentifier` field in `app.json`
+- The EAS project ID for the demo project is `3968669d-fded-4a8b-acb9-f64b4494beaf` (in `app.json` under `extra.eas.projectId`). Replace this with your own project ID when creating a new EAS project.
+
+## Building
+
+<Steps>
+  <Step title="Log in to EAS">
+    ```bash
+    eas login
+    ```
+  </Step>
+  <Step title="Configure the project">
+    Run this once to link the project to your EAS account and generate any missing native configuration:
+
+    ```bash
+    eas build:configure
+    ```
+  </Step>
+  <Step title="Build for your target platform">
+    <CodeGroup>
+
+    ```bash android
+    eas build --platform android
+    ```
+
+    ```bash ios
+    eas build --platform ios
+    ```
+
+    ```bash all
+    eas build --platform all
+    ```
+
+    </CodeGroup>
+  </Step>
+  <Step title="Retrieve the build artifact">
+    Once the build completes, download the artifact from the [EAS dashboard](https://expo.dev) or install it directly on a connected device using the link EAS provides.
+  </Step>
+</Steps>
+
+## Development builds
+
+For quick iteration without a full native build, use Expo Go:
+
+```bash
+npx expo start
+```
+
+Scan the QR code in the terminal with the Expo Go app on your device. Note that Expo Go does not support all native modules — for anything that requires native code, use a development build instead:
+
+```bash
+eas build --profile development
+```
+
+You can also target a specific platform for local testing:
+
+```bash
+npx expo start --android
+npx expo start --ios
+```
+
+## Submitting to stores
+
+After a successful production build, submit directly from EAS:
+
+<CodeGroup>
+
+```bash android
+eas submit --platform android
+```
+
+```bash ios
+eas submit --platform ios
+```
+
+</CodeGroup>
+
+<Note>
+  Store submissions require active developer accounts: the [Apple Developer Program](https://developer.apple.com/programs/) (USD 99/year) for iOS, and a [Google Play Console](https://play.google.com/console/) account (one-time USD 25 fee) for Android.
+</Note>
+
+## App configuration
+
+Key values from `app.json`:
+
+| Field | Value |
+|---|---|
+| App name | `Fittura` |
+| Slug | `fittura` |
+| Version | `1.0.0` |
+| Orientation | Portrait only |
+| Android package | `com.belalelkady.fittura` |
+| Android adaptive icon background | `#4f46e5` (indigo) |
+| Splash screen background (light) | `#4f46e5` (indigo) |
+| Splash screen background (dark) | `#111827` (near-black) |

@@ -1,0 +1,65 @@
+---
+title: "Project structure"
+description: "Directory layout and what each folder contains in the Fittura codebase."
+---
+
+All source code lives under `src/`. The only exception is the Expo Router entry point, which is picked up automatically from `expo-router/entry` as defined in `package.json`.
+
+```text
+src/
+├── app/                    # Expo Router screens (file-based routing)
+│   ├── (auth)/            # Authentication screens (login, register, etc.)
+│   ├── (tabs)/            # Main tab navigation screens
+│   │   ├── index.tsx      # Wardrobe screen
+│   │   ├── camera.tsx     # Add items screen
+│   │   ├── favorites.tsx  # Saved outfits screen
+│   │   └── profile.tsx    # Profile & settings screen
+│   ├── modal.tsx          # AI recommendation modal
+│   └── verify-email.tsx   # OTP verification screen
+├── components/            # Shared UI components
+│   └── ui/               # Core UI primitives
+├── config/
+│   └── env.ts            # Environment variables (webhook URLs, Supabase keys)
+├── constants/            # App-wide constants
+├── context/
+│   └── AuthContext.tsx   # Authentication context provider
+├── hooks/                # Custom React hooks
+├── i18n/
+│   ├── index.ts          # i18next configuration
+│   └── locales/          # Translation files (en, es, fr, de, it, pt, ar, ja, ko, zh)
+├── lib/
+│   └── supabase.ts       # Supabase client initialization
+├── services/             # Business logic and API calls
+│   ├── auth.service.ts   # Authentication operations
+│   ├── wardrobe.service.ts # Wardrobe CRUD via n8n webhooks
+│   └── recommendation.service.ts # AI outfit recommendations
+└── store/                # Zustand state stores
+    ├── wardrobe.store.ts  # Wardrobe items state
+    └── favorites.store.ts # Saved outfits state
+```
+
+## Directory reference
+
+**`app/`**
+
+Screen components organized by route. expo-router generates the navigation structure directly from the file system — files in `(auth)/` are grouped under the auth layout, and files in `(tabs)/` become the bottom tab screens.
+
+**`services/`**
+
+All external API calls. Each service file maps to a domain: `auth.service.ts` wraps the Supabase auth API, `wardrobe.service.ts` calls the n8n wardrobe webhooks, and `recommendation.service.ts` calls the n8n recommendation webhook and parses the outfit response.
+
+**`store/`**
+
+Zustand stores for client-side state. Service functions are called from store actions rather than directly from components. The favorites store uses Zustand's `persist` middleware with AsyncStorage so saved outfits survive app restarts.
+
+**`context/`**
+
+React Context for authentication state. `AuthContext.tsx` wraps the entire app and exposes `user`, `isLoading`, and all auth operations (`login`, `register`, `logout`, `verifyEmail`, `deleteAccount`, etc.) to any component via the `useAuth()` hook.
+
+**`i18n/locales/`**
+
+One JSON file per supported language containing all UI string translations. The active locale is detected at startup via expo-localization and can be changed from the profile screen.
+
+**`config/env.ts`**
+
+Single file for all external service URLs and keys. Edit this file to point the app at your own n8n instance or Supabase project.

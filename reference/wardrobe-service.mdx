@@ -1,0 +1,236 @@
+---
+title: "WardrobeService"
+description: "Reference for WardrobeService and useWardrobeStore — managing clothing items."
+---
+
+`WardrobeService` communicates with n8n webhooks to fetch, add, and delete wardrobe items. Import it from `src/services/wardrobe.service.ts`.
+
+## Types
+
+```typescript
+interface WardrobeItem {
+  id: string;
+  imageUrl: string;
+  category: string; // e.g., 'Top', 'Bottom', 'Shoes'
+  tags: string[];
+  createdAt: Date;
+  filename?: string;
+  storagePath?: string;
+}
+```
+
+## WardrobeService methods
+
+### getItems
+
+```typescript
+getItems(user: User, language?: string): Promise<WardrobeItem[]>
+```
+
+Fetches all wardrobe items for the given user by calling `N8N_GET_ITEMS_WEBHOOK`. Returns an empty array if the webhook URL is not configured or the response is empty.
+
+<ParamField body="user" type="object" required>
+  The authenticated user object. Must include `id`, `email`, and `name`.
+</ParamField>
+
+<ParamField body="language" type="string" default="en">
+  Locale code for the response language (e.g., `'en'`, `'ar'`).
+</ParamField>
+
+Returns `Promise<WardrobeItem[]>`.
+
+```typescript
+import { WardrobeService } from 'src/services/wardrobe.service';
+
+const items = await WardrobeService.getItems(user, 'en');
+```
+
+---
+
+### addItem
+
+```typescript
+addItem(imageUrl: string): Promise<WardrobeItem>
+```
+
+Creates a local `WardrobeItem` object with a generated `id`, the provided `imageUrl`, and default category `'Uncategorized'`. The actual image upload and AI classification happen via `RecommendationService` in the camera flow.
+
+<ParamField body="imageUrl" type="string" required>
+  A local file URI or remote URL for the item's image.
+</ParamField>
+
+Returns `Promise<WardrobeItem>`.
+
+```typescript
+const item = await WardrobeService.addItem('file:///path/to/photo.jpg');
+```
+
+---
+
+### deleteItem
+
+```typescript
+deleteItem(item: WardrobeItem, user: User): Promise<void>
+```
+
+Deletes a wardrobe item by calling `N8N_DELETE_ITEM_WEBHOOK` with the item's metadata. Throws if the webhook returns a non-success response.
+
+<ParamField body="item" type="object" required>
+  The `WardrobeItem` to delete. The `id`, `storagePath`, and `filename` fields are sent to the webhook.
+</ParamField>
+
+<ParamField body="user" type="object" required>
+  The authenticated user object. `user.id` is included in the webhook payload.
+</ParamField>
+
+```typescript
+await WardrobeService.deleteItem(item, user);
+```
+
+---
+
+### getStats
+
+```typescript
+getStats(): Promise<{ totalItems: number }>
+```
+
+Returns basic wardrobe statistics. Currently always resolves with `{ totalItems: 0 }` — a real stats endpoint is not yet implemented.
+
+```typescript
+const { totalItems } = await WardrobeService.getStats();
+```
+
+---
+
+## useWardrobeStore
+
+`useWardrobeStore` is a Zustand store that wraps `WardrobeService` and manages wardrobe state across the app. Import it from `src/store/wardrobe.store.ts`.
+
+### State
+
+| Field | Type | Description |
+|---|---|---|
+| `items` | `WardrobeItem[]` | The current list of wardrobe items. |
+| `isLoading` | `boolean` | `true` while a fetch, add, or delete operation is in progress. |
+| `error` | `string \| null` | Error message from the last failed operation, or `null`. |
+
+### Actions
+
+#### fetchItems
+
+```typescript
+fetchItems(user: User, forceRefresh?: boolean, language?: string): Promise<void>
+```
+
+Fetches wardrobe items and updates the store. Returns immediately if items are already cached unless `forceRefresh` is `true`.
+
+<ParamField body="user" type="object" required>
+  The authenticated user object passed to `WardrobeService.getItems`.
+</ParamField>
+
+<ParamField body="forceRefresh" type="boolean" default="false">
+  When `true`, bypasses the cache and always fetches from the webhook.
+</ParamField>
+
+<ParamField body="language" type="string" default="en">
+  Locale code passed to `WardrobeService.getItems`.
+</ParamField>
+
+<Note>
+  `fetchItems` returns cached data if `items.length > 0` and `forceRefresh` is not `true`. Pass `forceRefresh: true` after adding or deleting items to ensure the store reflects the latest server state.
+</Note>
+
+#### addItem
+
+```typescript
+addItem(imageUrl: string): Promise<void>
+```
+
+Calls `WardrobeService.addItem` and appends the result to `items`.
+
+#### deleteItem
+
+```typescript
+deleteItem(id: string, user: User): Promise<void>
+```
+
+Finds the item by `id`, calls `WardrobeService.deleteItem`, and removes it from `items`.
+
+### Usage example
+
+```typescript
+import { useWardrobeStore } from 'src/store/wardrobe.store';
+
+const { items, fetchItems, deleteItem } = useWardrobeStore();
+
+// Fetch on mount
+useEffect(() => {
+  fetchItems(user);
+}, []);
+
+// Force refresh after an upload
+await fetchItems(user, true);
+
+// Delete an item
+await deleteItem(item.id, user);
+```
+
+---
+
+## useFavoritesStore
+
+`useFavoritesStore` is a Zustand store for persisted saved outfits. Favorites are stored locally using AsyncStorage via Zustand's `persist` middleware, so they survive app restarts. Import it from `src/store/favorites.store.ts`.
+
+### State
+
+| Field | Type | Description |
+|---|---|---|
+| `favorites` | `Outfit[]` | The list of saved outfits. Newest additions appear first. |
+
+### Actions
+
+#### addFavorite
+
+```typescript
+addFavorite(outfit: Outfit): void
+```
+
+Adds an outfit to the favorites list. If the outfit is already saved (matched by `id`), the call is a no-op — duplicates are not added.
+
+#### removeFavorite
+
+```typescript
+removeFavorite(id: string): void
+```
+
+Removes the outfit with the given `id` from the favorites list.
+
+#### isFavorite
+
+```typescript
+isFavorite(id: string): boolean
+```
+
+Returns `true` if an outfit with the given `id` is currently in the favorites list.
+
+### Usage example
+
+```typescript
+import { useFavoritesStore } from 'src/store/favorites.store';
+
+const { favorites, addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
+
+// Save an outfit
+addFavorite(outfit);
+
+// Check if already saved (e.g. to toggle heart icon)
+const saved = isFavorite(outfit.id);
+
+// Remove from saved outfits
+removeFavorite(outfit.id);
+```
+
+<Note>
+  The favorites store is persisted under the key `'favorites-storage'` in AsyncStorage. Saved outfits are retained across app restarts and device reboots until explicitly removed.
+</Note>
